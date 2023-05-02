@@ -11,6 +11,7 @@ object Device {
   final case class RecordTemperature(requestId: Long, value: Double, replyTo: ActorRef[TemperatureRecorded])
     extends Command
   final case class TemperatureRecorded(requestId: Long)
+  case object Passivate extends Command
 
   def apply(groupId: String, deviceId: String): Behavior[Command] =
     Behaviors.setup { context =>
@@ -24,14 +25,20 @@ class Device private (context: ActorContext[Command], groupId: String, deviceId:
 
   private def device(reading: Option[Double]): Behavior[Command] = {
     Behaviors.receiveMessage[Command] {
+
       case ReadTemperature(requestId, replyTo) =>
         context.log.info("ReadTemperature({})", requestId)
         replyTo ! RespondTemperature(requestId, reading)
         Behaviors.same
+
       case RecordTemperature(requestId, value, replyTo) =>
         context.log.info("RecordTemperature({}, {})", requestId, value)
         replyTo ! TemperatureRecorded(requestId)
         device(Some(value))
+
+      case Passivate =>
+        Behaviors.stopped
+
     }.receiveSignal( {
       case (context, PostStop) =>
         context.log.info2("Device actor {}-{} stopped", groupId, deviceId)
