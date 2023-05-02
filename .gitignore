@@ -1,0 +1,6 @@
+.bsp/*
+.idea/*
+target/*
+sbt-dist/*
+project/project/target/*
+project/target/*
