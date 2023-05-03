@@ -2,7 +2,7 @@ package com.example
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.example.Device.{RecordTemperature, TemperatureRecorded}
-import com.example.DeviceManager.{DeviceRegistered, ReplyDeviceList, RequestDeviceList, RequestTrackDevice}
+import com.example.DeviceManager.{DeviceRegistered, ReplyDeviceList, RequestAllTemperatures, RequestDeviceList, RequestTrackDevice, RespondAllTemperatures, Temperature, TemperatureNotAvailable}
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration.DurationInt
@@ -88,6 +88,34 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
         groupActor ! RequestDeviceList(requestId = 0, "group", deviceListProbe.ref)
         deviceListProbe.expectMessage(ReplyDeviceList(requestId = 0, Set("device2")))
       }
+    }
+
+    "be able to collect temperatures from all active devices" in {
+      val registeredProbe = createTestProbe[DeviceRegistered]()
+      val groupActor = spawn(DeviceGroup("group"))
+
+      groupActor ! RequestTrackDevice("group", "device1", registeredProbe.ref)
+      val deviceActor1 = registeredProbe.receiveMessage().device
+
+      groupActor ! RequestTrackDevice("group", "device2", registeredProbe.ref)
+      val deviceActor2 = registeredProbe.receiveMessage().device
+
+      groupActor ! RequestTrackDevice("group", "device3", registeredProbe.ref)
+      registeredProbe.receiveMessage()
+
+      val recordProbe = createTestProbe[TemperatureRecorded]()
+      deviceActor1 ! RecordTemperature(requestId = 0, 1.0, recordProbe.ref)
+      recordProbe.expectMessage(TemperatureRecorded(requestId = 0))
+      deviceActor2 ! RecordTemperature(requestId = 1, 2.0, recordProbe.ref)
+      recordProbe.expectMessage(TemperatureRecorded(requestId = 1))
+
+      val allTempProbe = createTestProbe[RespondAllTemperatures]()
+      groupActor ! RequestAllTemperatures(requestId = 0, groupId = "group", allTempProbe.ref)
+      allTempProbe.expectMessage(
+        RespondAllTemperatures(
+          requestId = 0,
+          temperatures =
+            Map("device1" -> Temperature(1.0), "device2" -> Temperature(2.0), "device3" -> TemperatureNotAvailable)))
     }
   }
 }

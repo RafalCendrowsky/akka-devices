@@ -7,7 +7,7 @@ import com.example.Device.Command
 object Device {
   sealed trait Command
   final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature]) extends Command
-  final case class RespondTemperature(requestId: Long, value: Option[Double]) extends Command
+  final case class RespondTemperature(requestId: Long, deviceId: String, value: Option[Double]) extends Command
   final case class RecordTemperature(requestId: Long, value: Double, replyTo: ActorRef[TemperatureRecorded])
     extends Command
   final case class TemperatureRecorded(requestId: Long)
@@ -28,7 +28,7 @@ class Device private (context: ActorContext[Command], groupId: String, deviceId:
 
       case ReadTemperature(requestId, replyTo) =>
         context.log.info("ReadTemperature({})", requestId)
-        replyTo ! RespondTemperature(requestId, reading)
+        replyTo ! RespondTemperature(requestId, deviceId, reading)
         Behaviors.same
 
       case RecordTemperature(requestId, value, replyTo) =>

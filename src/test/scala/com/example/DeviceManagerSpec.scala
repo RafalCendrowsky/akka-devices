@@ -30,8 +30,8 @@ class DeviceManagerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       managerActor ! DeviceManager.RequestDeviceList(requestId = 1, "group2", deviceListProbe.ref)
       deviceListProbe.expectMessage(DeviceManager.ReplyDeviceList(requestId = 1, Set("device3")))
 
-      managerActor ! DeviceManager.RequestDeviceList(requestId = 1, "group3", deviceListProbe.ref)
-      deviceListProbe.expectMessage(DeviceManager.ReplyDeviceList(requestId = 1, Set("device3")))
+      managerActor ! DeviceManager.RequestDeviceList(requestId = 2, "group3", deviceListProbe.ref)
+      deviceListProbe.expectMessage(DeviceManager.ReplyDeviceList(requestId = 2, Set()))
     }
   }
 

@@ -7,6 +7,7 @@ object IoTSupervisor {
   def apply(): Behavior[Nothing] =
     Behaviors.setup[Nothing]{ context =>
       context.log.info("IoT Application started")
+      context.spawn(DeviceManager(), "Device Manager")
       Behaviors.receiveMessage[Nothing] { _ =>
         Behaviors.unhandled
       }.receiveSignal{

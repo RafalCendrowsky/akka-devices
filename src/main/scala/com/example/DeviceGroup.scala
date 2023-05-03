@@ -3,7 +3,9 @@ package com.example
 import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import com.example.DeviceGroup.{Command, DeviceTerminated}
-import com.example.DeviceManager.{DeviceRegistered, ReplyDeviceList, RequestDeviceList, RequestTrackDevice}
+import com.example.DeviceManager.{DeviceRegistered, ReplyDeviceList, RequestAllTemperatures, RequestDeviceList, RequestTrackDevice}
+
+import scala.concurrent.duration.DurationInt
 
 object DeviceGroup {
   trait Command
@@ -24,6 +26,13 @@ class DeviceGroup(context: ActorContext[Command], groupId: String) {
   def deviceGroup(deviceIdToActor: Map[String, ActorRef[Device.Command]]): Behavior[Command] = {
     Behaviors.receiveMessage[Command] {
 
+      case RequestAllTemperatures(requestId, `groupId`, replyTo) =>
+        context.spawnAnonymous(DeviceGroupQuery(deviceIdToActor, requestId, replyTo, 3.seconds))
+        Behaviors.same
+
+      case RequestAllTemperatures(_, gId, _) =>
+        Behaviors.unhandled
+
       case RequestTrackDevice(`groupId`, deviceId, replyTo) =>
         deviceIdToActor.get(deviceId) match {
           case Some(deviceActor) =>
@@ -38,8 +47,7 @@ class DeviceGroup(context: ActorContext[Command], groupId: String) {
         }
 
       case RequestTrackDevice(gId, _, _) =>
-        context.log.warn2("Ignoring TrackDevice request for {}. This actor is responsible for {}.", gId, groupId)
-        Behaviors.same
+        Behaviors.unhandled
 
       case DeviceTerminated(_, _, deviceId) =>
         context.log.info("Device actor for {} has been terminated", deviceId)
@@ -50,8 +58,7 @@ class DeviceGroup(context: ActorContext[Command], groupId: String) {
           Behaviors.same
 
       case RequestDeviceList(_, gId, _) =>
-        context.log.warn2("Ignoring RequestDeviceList for {}. This actor is responsible for {}.", gId, groupId)
-        Behaviors.same
+        Behaviors.unhandled
 
     }.receiveSignal {
       case (context, PostStop) =>
