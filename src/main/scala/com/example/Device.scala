@@ -7,7 +7,7 @@ import com.example.Device.Command
 object Device {
   sealed trait Command
   final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature]) extends Command
-  final case class RespondTemperature(requestId: Long, deviceId: String, value: Option[Double]) extends Command
+  final case class RespondTemperature(requestId: Long, deviceId: String, value: Option[Double])
   final case class RecordTemperature(requestId: Long, value: Double, replyTo: ActorRef[TemperatureRecorded])
     extends Command
   final case class TemperatureRecorded(requestId: Long)
